@@ -1,18 +1,18 @@
 pipeline {
     agent any
 
-    environment {
-        DOCKER_IMAGE = "ubaidullah334/my-app"
-        REGISTRY_CREDENTIALS = 'dockerhub-creds'
-        NODE_ENV = "${params.ENV}"
-    }
-
     parameters {
         choice(
             name: 'ENV',
             choices: ['dev', 'qa', 'prod'],
             description: 'Select environment for deployment'
         )
+    }
+
+    environment {
+        DOCKER_IMAGE = "ubaidullah334/my-app"
+        REGISTRY_CREDENTIALS = 'dockerhub-creds'
+        NODE_ENV = "${params.ENV}"
     }
 
     stages {
@@ -49,7 +49,7 @@ pipeline {
             }
         }
 
-        🔐 stage('Docker Login') {
+        stage('Docker Login') {
             steps {
                 withCredentials([
                     usernamePassword(
