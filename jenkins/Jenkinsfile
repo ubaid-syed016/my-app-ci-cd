@@ -1,6 +1,7 @@
 pipeline {
     agent any
 
+    // Parameters for environment selection
     parameters {
         choice(
             name: 'ENV',
@@ -10,8 +11,11 @@ pipeline {
     }
 
     environment {
+        // Docker image name
         DOCKER_IMAGE = "ubaidullah334/my-app"
+        // Jenkins DockerHub credentials ID
         REGISTRY_CREDENTIALS = 'dockerhub-creds'
+        // Node environment variable based on selected ENV
         NODE_ENV = "${params.ENV}"
     }
 
@@ -19,6 +23,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
+                // Checkout code from GitHub using Personal Access Token
                 git branch: 'main',
                     url: 'https://github.com/ubaid-syed016/my-app-ci-cd.git',
                     credentialsId: 'github-pat'
@@ -28,7 +33,7 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 dir('app') {
-                    sh 'npm install'
+                    sh 'npm install' // Install Node.js dependencies
                 }
             }
         }
@@ -36,7 +41,7 @@ pipeline {
         stage('Unit Tests') {
             steps {
                 dir('app') {
-                    sh 'npx jest ../tests/unit --passWithNoTests'
+                    sh 'npx jest ../tests/unit --passWithNoTests' // Run unit tests
                 }
             }
         }
@@ -44,8 +49,7 @@ pipeline {
         stage('Lint') {
             steps {
                 dir('app') {
-                    // Don't fail pipeline on lint warnings
-                    sh 'npm run lint || echo "Lint warnings detected"'
+                    sh 'npm run lint || echo "Lint warnings detected"' // Lint the code
                 }
             }
         }
@@ -59,7 +63,7 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS'
                     )
                 ]) {
-                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin' // Login to DockerHub
                 }
             }
         }
@@ -67,8 +71,11 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    def imageTag = "v${env.BUILD_NUMBER}"
-                    docker.build("${DOCKER_IMAGE}:${imageTag}", "-f docker/Dockerfile .")
+                    def imageTag = "v${env.BUILD_NUMBER}" // Image tag using build number
+                    docker.build(
+                        "${DOCKER_IMAGE}:${imageTag}", 
+                        "-f docker/Dockerfile ." // Build Docker image from Dockerfile
+                    )
                 }
             }
         }
@@ -76,9 +83,12 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', REGISTRY_CREDENTIALS) {
+                    docker.withRegistry(
+                        'https://index.docker.io/v1/',
+                        REGISTRY_CREDENTIALS
+                    ) {
                         def imageTag = "v${env.BUILD_NUMBER}"
-                        docker.image("${DOCKER_IMAGE}:${imageTag}").push()
+                        docker.image("${DOCKER_IMAGE}:${imageTag}").push() // Push image to DockerHub
                     }
                 }
             }
@@ -87,28 +97,42 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
+                    // Deployment part commented for explanation
+
+                    /*
+                    // Path to environment-specific .env file
                     def envFile = "config/${params.ENV}.env"
+                    // Docker image tag based on Jenkins build number
                     def imageTag = "v${env.BUILD_NUMBER}"
 
-                    // Load PORT from env file or use default 3000
+                    // Load PORT from env file or use default 3000 if not set
                     def port = sh(
                         script: "grep PORT ${envFile} | cut -d '=' -f2",
                         returnStdout: true
                     ).trim()
                     if (!port) {
-                        port = "3000"
+                        port = "3000" // default port if not defined in env file
                     }
 
+                    // Deployment commands
                     sh """
+                        # Stop any running container for this environment, ignore errors if not exists
                         docker stop my-app-${params.ENV} || true
+
+                        # Remove old container, ignore errors if not exists
                         docker rm my-app-${params.ENV} || true
 
+                        # Run the new container with:
+                        # - name based on environment (my-app-dev / my-app-qa / my-app-prod)
+                        # - environment variables from env file
+                        # - port mapping dynamically loaded from env file
                         docker run -d \
                           --name my-app-${params.ENV} \
                           --env-file ${envFile} \
                           -p ${port}:${port} \
                           ${DOCKER_IMAGE}:${imageTag}
                     """
+                    */
                 }
             }
         }
@@ -116,7 +140,7 @@ pipeline {
         stage('Integration Tests') {
             steps {
                 dir('app') {
-                    sh 'npx jest ../tests/integration --passWithNoTests'
+                    sh 'npx jest ../tests/integration --passWithNoTests' // Run integration tests
                 }
             }
         }
@@ -126,7 +150,7 @@ pipeline {
                 expression { params.ENV != 'dev' }
             }
             steps {
-                input message: "Approve deployment to ${params.ENV}?"
+                input message: "Approve deployment to ${params.ENV}?" // Manual approval for QA/prod
             }
         }
     }
