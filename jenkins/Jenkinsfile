@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "mydockerhubuser/my-app"
+        DOCKER_IMAGE = "ubaidullah334/my-app"
         REGISTRY_CREDENTIALS = 'dockerhub-creds' // Add DockerHub credentials in Jenkins
     }
 
@@ -13,7 +13,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/<username>/my-app-ci-cd.git'
+                git branch: 'main', url: 'https://github.com/ubaid-syed016/my-app-ci-cd.git'
             }
         }
 
